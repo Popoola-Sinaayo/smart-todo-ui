@@ -15,7 +15,7 @@ const Page = () => {
     category: "",
     status: "",
     priority_score: 0,
-    deadline: "",
+    deadline: new Date().toISOString().slice(0, 16), // Default to current date and time
   });
 
   const [categoryData, setCategoryData] = useState<
@@ -24,10 +24,10 @@ const Page = () => {
 
   const handleCreateTask = async () => {
     try {
-      const response = await api.post("/tasks", form);
+      const response = await api.post("/tasks/", form);
       if (response?.data) {
         toast.success("Task created successfully");
-        router.push("/tasks");
+        router.push("/");
       }
     } catch (error) {
       console.error("Error creating task:", error);
@@ -37,17 +37,34 @@ const Page = () => {
 
   const getAISuggestions = async () => {
     try {
-      const response = await api.post("/tasks/ai-suggestions", {
+      const response = await api.post("/ai/tasks", {
         title: form.title,
         description: form.description,
         category: form.category,
       });
-        console.log(response.data);
+      console.log(response.data);
       if (response?.data) {
         setForm({
           ...form,
           priority_score: response.data.priority_score,
           deadline: response.data.deadline,
+        });
+        toast.success("AI suggestions applied");
+      }
+    } catch (error) {
+      console.error("Error getting AI suggestions:", error);
+      toast.error("Failed to get AI suggestions");
+    }
+  };
+
+  const getAISuggestionsTask = async () => {
+    try {
+      const response = await api.get("/ai/tasks/suggestions");
+      console.log(response.data);
+      if (response?.data) {
+        setForm({
+          ...form,
+          ...response.data,
         });
         toast.success("AI suggestions applied");
       }
@@ -86,16 +103,24 @@ const Page = () => {
             type="text"
             className="border-0 rounded-md px-2 py-1 w-full mb-4 bg-gray-100"
             placeholder="Enter task title"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
           />
           <p className="text-left">Description</p>
           <textarea
             className="border-0 rounded-md px-2 py-1 w-full mb-4 bg-gray-100"
             placeholder="Enter task description"
             rows={4}
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
           ></textarea>
           <p className="text-left">Category</p>
-          <select className="border-0 rounded-md px-2 py-2 w-full mb-4 bg-gray-100">
-            <option value="" disabled selected>
+          <select
+            className="border-0 rounded-md px-2 py-2 w-full mb-4 bg-gray-100"
+            value={form.category}
+            onChange={(e) => setForm({ ...form, category: e.target.value })}
+          >
+            <option disabled selected>
               Select category
             </option>
             {categoryData.map((category) => (
@@ -105,7 +130,11 @@ const Page = () => {
             ))}
           </select>
           <p className="text-black text-left">Task Status</p>
-          <select className="border-0 rounded-md px-2 py-2 w-full mb-4 bg-gray-100 text-black">
+          <select
+            className="border-0 rounded-md px-2 py-2 w-full mb-4 bg-gray-100 text-black"
+            value={form.status}
+            onChange={(e) => setForm({ ...form, status: e.target.value })}
+          >
             <option value="" disabled selected>
               Select task status
             </option>
@@ -131,21 +160,40 @@ const Page = () => {
                 min={1}
                 className="border-0 rounded-md px-2 py-1 w-full mb-4 bg-white text-black"
                 placeholder="Enter task priority score"
+                value={form.priority_score}
+                onChange={(e) =>
+                  setForm({ ...form, priority_score: Number(e.target.value) })
+                }
               />
               <p className="text-black text-left">Due Date</p>
               <input
                 type="datetime-local"
                 className="border-0 rounded-md px-2 py-1 w-full mb-4 bg-white text-black"
                 placeholder="Enter task due date"
+                value={form.deadline}
+                onChange={(e) => setForm({ ...form, deadline: e.target.value })}
               />
-              <button className="bg-[#602BEF] text-white rounded-md px-4 py-1 cursor-pointer hover:bg-[#602BEF4D]transition-colors duration-200">
+              <button
+                className="bg-[#602BEF] text-white rounded-md px-4 py-1 cursor-pointer hover:bg-[#602BEF4D]transition-colors duration-200"
+                onClick={getAISuggestions}
+              >
                 Refine And Complete With AI
               </button>
             </div>
           </div>
 
-          <button className="bg-[#602BEF] text-white rounded-md px-4 py-1 cursor-pointer hover:bg-[#602BEF4D] transition-colors duration-200 w-full">
+          <button
+            className="bg-[#602BEF] text-white rounded-md px-4 py-1 cursor-pointer hover:bg-[#602BEF4D] transition-colors duration-200 w-full"
+            onClick={handleCreateTask}
+          >
             Create Task
+          </button>
+
+          <button
+            className="bg-white text-[#602BEF] rounded-md px-4 py-1 cursor-pointer transition-colors duration-200 w-full mt-4"
+            onClick={handleCreateTask}
+          >
+            Get AI Suggested Task
           </button>
         </div>
       </div>

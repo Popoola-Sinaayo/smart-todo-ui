@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import NavigationBar from "@/components/NavigationBar";
 import Tasks from "@/components/Tasks";
@@ -20,14 +21,35 @@ export default function Home() {
       created_at: string; // ISO date string
       updated_at: string;
     }[]
+    >([]);
+  const [allTasks, setAllTasks] = useState<
+    {
+      id: number;
+      title: string;
+      description: string;
+      category: string;
+      status: string;
+      priority_score: number;
+      deadline: string; // ISO date string
+      created_at: string; // ISO date string
+      updated_at: string;
+    }[]
   >([]);
+  const [filter, setFilter] = useState("all");
   useEffect(() => {
     const getAllTasks = async () => {
       try {
         const response = await api.get("/tasks");
         if (response?.data) {
           console.log("Fetched tasks:", response.data);
-          setTasks(response.data);
+          setTasks(response.data?.sort((a: any, b: any) => Number(b.priority_score) - Number(a.priority_score)));
+          setAllTasks(
+            response.data?.sort(
+              (a: any, b: any) =>
+                Number(b.priority_score) - Number(a.priority_score)
+            )
+          );
+
         } else {
           console.error("No tasks found");
         }
@@ -37,6 +59,23 @@ export default function Home() {
     };
     getAllTasks();
   }, []);
+
+  useEffect(() => { 
+    if (filter === "all") {
+      setTasks(allTasks);
+    } else if (filter === "ongoing") {
+      setTasks(allTasks.filter((task) => task.status === "in_progress"));
+    } else if (filter === "completed") {
+      setTasks(allTasks.filter((task) => task.status === "completed"));
+    } else if (filter === "high-priority") {
+      setTasks(allTasks.filter((task) => task.priority_score >= 80));
+    } else if (filter === "medium-priority") {
+      setTasks(allTasks.filter((task) => task.priority_score >= 40 && task.priority_score < 80));
+    } else if (filter === "low-priority") {
+      setTasks(allTasks.filter((task) => task.priority_score < 40));
+    }
+  }, [filter])
+
   return (
     <div className="min-h-screen bg-white flex">
       <NavigationBar activeTab="dashboard" />
@@ -50,18 +89,18 @@ export default function Home() {
             <p className="text-2xl font-semibold text-gray-800 mt-4">
               All Tasks
             </p>
-            <select className="border border-gray-300 rounded-md px-1 py-1 bg-white w-[150px]">
-              <option value="today" disabled>
+            <select className="border border-gray-300 rounded-md px-1 py-1 bg-white w-[150px]"
+            onChange={(e) => setFilter(e.target.value)} value={filter}
+            >
+              <option value="" disabled>
                 Filter
               </option>
-              <option value="today">All</option>
+              <option value="all">All</option>
               <option value="ongoing">Ongoing</option>
               <option value="completed">Completed</option>
               <option value="high-priority">High Priority</option>
               <option value="medium-priority">Medium Priority</option>
               <option value="low-priority">Low Priority</option>
-              <option value="work-category">Work Category</option>
-              <option value="health-category">Health Category</option>
             </select>
           </div>
           <div>
