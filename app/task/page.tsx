@@ -1,16 +1,82 @@
 "use client";
 import NavigationBar from "@/components/NavigationBar";
+import api from "@/request";
 import { Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import React from "react";
-  import { ToastContainer, toast } from "react-toastify";
+import React, { useEffect, useState } from "react";
+import { ToastContainer, toast } from "react-toastify";
 
 const Page = () => {
-    const router = useRouter();
+  const router = useRouter();
+
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    category: "",
+    status: "",
+    priority_score: 0,
+    deadline: "",
+  });
+
+  const [categoryData, setCategoryData] = useState<
+    { id: string; tag: string; category: string }[]
+  >([]);
+
+  const handleCreateTask = async () => {
+    try {
+      const response = await api.post("/tasks", form);
+      if (response?.data) {
+        toast.success("Task created successfully");
+        router.push("/tasks");
+      }
+    } catch (error) {
+      console.error("Error creating task:", error);
+      toast.error("Failed to create task");
+    }
+  };
+
+  const getAISuggestions = async () => {
+    try {
+      const response = await api.post("/tasks/ai-suggestions", {
+        title: form.title,
+        description: form.description,
+        category: form.category,
+      });
+        console.log(response.data);
+      if (response?.data) {
+        setForm({
+          ...form,
+          priority_score: response.data.priority_score,
+          deadline: response.data.deadline,
+        });
+        toast.success("AI suggestions applied");
+      }
+    } catch (error) {
+      console.error("Error getting AI suggestions:", error);
+      toast.error("Failed to get AI suggestions");
+    }
+  };
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await api.get("/categories");
+        if (response?.data) {
+          console.log("Fetched categories:", response.data);
+          setCategoryData(response.data);
+          toast.success("Categories fetched successfully");
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        toast.error("Failed to fetch categories");
+      }
+    };
+    fetchCategories();
+  }, []);
 
   return (
-      <div className="min-h-screen bg-white flex">
-          <ToastContainer />
+    <div className="min-h-screen bg-white flex">
+      <ToastContainer />
       <NavigationBar activeTab="create" />
       <div className="pt-6 px-6 w-full flex flex-col mx-auto text-center items-center justify-center">
         <p className="text-2xl font-bold">Create New Task</p>
@@ -32,9 +98,11 @@ const Page = () => {
             <option value="" disabled selected>
               Select category
             </option>
-            <option value="work">Work</option>
-            <option value="health">Health</option>
-            <option value="personal">Personal</option>
+            {categoryData.map((category) => (
+              <option key={category.id} value={category.category}>
+                {category.category}
+              </option>
+            ))}
           </select>
           <p className="text-black text-left">Task Status</p>
           <select className="border-0 rounded-md px-2 py-2 w-full mb-4 bg-gray-100 text-black">

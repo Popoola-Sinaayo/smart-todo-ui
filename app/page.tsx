@@ -85,10 +85,6 @@ export default function Home() {
                 <p className="text-gray-500">No tasks available</p>
               </div>
             )}
-            {/* <Tasks />
-            <Tasks />
-            <Tasks />
-            <Tasks /> */}
           </div>
         </div>
       </div>
